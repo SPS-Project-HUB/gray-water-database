@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gray Water Monitoring Dashboard</title>
+  <script type="module">
+    // Import Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-database.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2zBIHwuVu8ecBUViZUpKYYlxQ6i7mfRA",
+      authDomain: "gray-water-database.firebaseapp.com",
+      databaseURL: "https://gray-water-database-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "gray-water-database",
+      storageBucket: "gray-water-database.firebasestorage.app",
+      messagingSenderId: "858354713044",
+      appId: "1:858354713044:web:642a008b6d77012f115641"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // References to your sensor paths
+    const sensors = {
+      pH: ref(database, "/sensors/pH"),
+      TDS: ref(database, "/sensors/TDS"),
+      level1: ref(database, "/sensors/level1"),
+      level2: ref(database, "/sensors/level2"),
+      flow: ref(database, "/sensors/flow")
+    };
+
+    // Update HTML with live data
+    function updateSensorValue(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    // Listen to Firebase changes
+    onValue(sensors.pH, snap => updateSensorValue("phValue", snap.val()));
+    onValue(sensors.TDS, snap => updateSensorValue("tdsValue", snap.val()));
+    onValue(sensors.level1, snap => updateSensorValue("level1Value", snap.val()));
+    onValue(sensors.level2, snap => updateSensorValue("level2Value", snap.val()));
+    onValue(sensors.flow, snap => updateSensorValue("flowValue", snap.val()));
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f7fa;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .dashboard {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
+      width: 400px;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    .sensor {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px;
+      margin: 8px 0;
+      background: #f9f9f9;
+      border-radius: 8px;
+      font-size: 18px;
+    }
+    .label {
+      font-weight: bold;
+      color: #555;
+    }
+    .value {
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <h2>🌊 Gray Water Dashboard</h2>
+    <div class="sensor"><span class="label">pH:</span> <span id="phValue" class="value">--</span></div>
+    <div class="sensor"><span class="label">TDS:</span> <span id="tdsValue" class="value">--</span></div>
+    <div class="sensor"><span class="label">Level 1:</span> <span id="level1Value" class="value">--</span></div>
+    <div class="sensor"><span class="label">Level 2:</span> <span id="level2Value" class="value">--</span></div>
+    <div class="sensor"><span class="label">Flow Rate:</span> <span id="flowValue" class="value">--</span></div>
+  </div>
+</body>
+</html>
