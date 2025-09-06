@@ -1,244 +1,122 @@
-<!--
-  Gray Water Dashboard - Single-file Professional Webapp
-  - Save this file as `index.html` and push to a GitHub repo.
-  - To host on GitHub Pages: in repo settings -> Pages -> select branch (main) and / (root). Your site will be at https://<username>.github.io/<repo>/
-  - This webapp connects to your Firebase Realtime Database. Update the firebaseConfig below if needed.
-
-  Author: SPS Project Hub
--->
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gray Water — Live Dashboard</title>
-  <meta name="description" content="Professional live dashboard for gray-water system monitoring (pH, TDS, Levels, Flow)." />
-
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gray Water Monitoring Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    :root{
-      --bg:#0f1724; --card:#0b1220; --muted:#9aa7b2; --accent:#00d1b2; --glass:rgba(255,255,255,0.04);
-      --success:#16a34a; --danger:#ef4444; --card-radius:14px; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    body {
+      background: linear-gradient(to right, #e3f2fd, #f1f8e9);
+      font-family: 'Poppins', sans-serif;
     }
-    *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(180deg,#071021 0%, #071726 100%);color:#e6eef3;min-height:100vh}
-    .container{max-width:1100px;margin:32px auto;padding:28px}
-
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-    .brand{display:flex;gap:14px;align-items:center}
-    .logo{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#3bd1ff);display:flex;align-items:center;justify-content:center;font-weight:700;color:#042024}
-    h1{margin:0;font-size:1.2rem}
-    p.lead{margin:0;color:var(--muted);font-size:0.9rem}
-
-    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
-    .card{background:var(--card);border-radius:var(--card-radius);padding:16px;box-shadow:0 6px 20px rgba(3,6,12,0.6);border:1px solid rgba(255,255,255,0.03)}
-    .big-card{grid-column:span 2}
-
-    .kpi{display:flex;align-items:center;justify-content:space-between}
-    .kpi .left{display:flex;gap:12px;align-items:center}
-    .kpi .title{font-size:0.85rem;color:var(--muted)}
-    .kpi .value{font-weight:700;font-size:1.6rem}
-    .kpi .trend{font-size:0.8rem;color:var(--muted)}
-
-    .small-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
-
-    .chart-wrap{height:300px}
-    canvas{max-width:100%}
-
-    footer{display:flex;justify-content:space-between;align-items:center;margin-top:18px;color:var(--muted);font-size:0.85rem}
-    .btn{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border-radius:10px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);cursor:pointer}
-    a.github{color:var(--muted);text-decoration:none}
-
-    /* Responsive */
-    @media (max-width:900px){
-      .grid{grid-template-columns:1fr;}
-      .big-card{grid-column:span 1}
-      .small-grid{grid-template-columns:1fr}
+    .navbar {
+      background: linear-gradient(90deg, #1e3c72, #2a5298);
     }
-
-    .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px}
-    .status-ok{background:var(--success)}
-    .status-warn{background:#f59e0b}
-    .status-off{background:var(--danger)}
+    .navbar-brand {
+      color: #fff !important;
+      font-weight: bold;
+      font-size: 1.5rem;
+      letter-spacing: 1px;
+    }
+    .card {
+      border-radius: 18px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+      background: #fff;
+    }
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    }
+    .card-title {
+      color: #1e3c72;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .card h2 {
+      font-size: 2.2rem;
+      color: #2a5298;
+    }
+    .footer {
+      background: linear-gradient(90deg, #2a5298, #1e3c72);
+      color: white;
+      padding: 12px;
+      text-align: center;
+      margin-top: 30px;
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+    }
+    .footer a {
+      color: #ffeb3b;
+      font-weight: 500;
+      text-decoration: none;
+    }
+    .footer a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="brand">
-        <div class="logo">GW</div>
-        <div>
-          <h1>Gray Water — Live Dashboard</h1>
-          <p class="lead">Monitoring pH, TDS, Tank levels & flow — hosted on GitHub Pages</p>
-        </div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center">
-        <div id="last-updated" class="btn">Last update: --</div>
-        <a class="btn" href="#" id="github-link" target="_blank">View on GitHub</a>
-      </div>
-    </header>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Gray Water Dashboard</a>
+    </div>
+  </nav>
 
-    <div class="grid">
-      <div class="card">
-        <div class="kpi">
-          <div class="left">
-            <div>
-              <div class="title">pH</div>
-              <div id="ph-value" class="value">--</div>
-              <div class="trend" id="ph-trend">Normal</div>
-            </div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:0.8rem;color:var(--muted)">Quality</div>
-            <div id="ph-status" style="margin-top:8px"><span class="status-dot status-off"></span></div>
-          </div>
-        </div>
-        <div class="small-grid">
-          <div class="card" style="margin-top:12px">
-            <div class="title">TDS (ppm)</div>
-            <div id="tds-value" class="value" style="font-size:1.4rem">--</div>
-            <div style="color:var(--muted);font-size:0.85rem;margin-top:6px">Lower is better for gray water reuse</div>
-          </div>
-          <div class="card" style="margin-top:12px">
-            <div class="title">Flow Rate (L/min)</div>
-            <div id="flow-value" class="value" style="font-size:1.4rem">--</div>
-            <div style="color:var(--muted);font-size:0.85rem;margin-top:6px">Real-time pulse count based</div>
-          </div>
+  <!-- Content -->
+  <div class="container mt-4">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card text-center p-4">
+          <h5 class="card-title">pH Value</h5>
+          <h2 id="phValue">--</h2>
         </div>
       </div>
-
-      <div class="card big-card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div class="title">pH History (last 60 readings)</div>
-            <div style="color:var(--muted);font-size:0.85rem">Live chart updated as data arrives</div>
-          </div>
-          <div>
-            <button id="download-csv" class="btn">Download CSV</button>
-          </div>
-        </div>
-        <div class="chart-wrap" style="margin-top:12px">
-          <canvas id="phChart"></canvas>
+      <div class="col-md-4">
+        <div class="card text-center p-4">
+          <h5 class="card-title">TDS (ppm)</h5>
+          <h2 id="tdsValue">--</h2>
         </div>
       </div>
-
-      <div class="card">
-        <div class="title">Level Sensors</div>
-        <div style="display:flex;gap:12px;margin-top:12px;align-items:center">
-          <div style="flex:1">
-            <div style="color:var(--muted);font-size:0.85rem">Level 1</div>
-            <div id="level1-value" class="value">--</div>
-          </div>
-          <div style="flex:1">
-            <div style="color:var(--muted);font-size:0.85rem">Level 2</div>
-            <div id="level2-value" class="value">--</div>
-          </div>
+      <div class="col-md-4">
+        <div class="card text-center p-4">
+          <h5 class="card-title">Flow Rate (L/min)</h5>
+          <h2 id="flowRate">--</h2>
         </div>
-        <div style="margin-top:12px;color:var(--muted);font-size:0.85rem">Use these to control pumps or show tank fill</div>
       </div>
-
     </div>
 
-    <footer>
-      <div>Gray Water Dashboard • Lightweight & responsive</div>
-      <div>Made with ❤️ • <a id="repoLink" class="github" target="_blank">GitHub Repo</a></div>
-    </footer>
+    <div class="row g-4 mt-2">
+      <div class="col-md-6">
+        <div class="card text-center p-4">
+          <h5 class="card-title">Water Level 1 (%)</h5>
+          <h2 id="level1">--</h2>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card text-center p-4">
+          <h5 class="card-title">Water Level 2 (%)</h5>
+          <h2 id="level2">--</h2>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Firebase SDK (modular) and code -->
-  <script type="module">
-    // Firebase config - update if changed
-    const firebaseConfig = {
-      apiKey: "AIzaSyD2zBIHwuVu8ecBUViZUpKYYlxQ6i7mfRA",
-      authDomain: "gray-water-database.firebaseapp.com",
-      databaseURL: "https://gray-water-database-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "gray-water-database",
-      storageBucket: "gray-water-database.appspot.com",
-      messagingSenderId: "858354713044",
-      appId: "1:858354713044:web:642a008b6d77012f115641"
-    };
+  <!-- Footer -->
+  <div class="footer">
+    <p>Gray Water Monitoring System | <a href="https://github.com/" target="_blank">GitHub Repo</a></p>
+  </div>
 
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js';
-    import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js';
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const sensorsRef = ref(db, '/sensors');
-
-    // UI elements
-    const phEl = document.getElementById('ph-value');
-    const tdsEl = document.getElementById('tds-value');
-    const flowEl = document.getElementById('flow-value');
-    const level1El = document.getElementById('level1-value');
-    const level2El = document.getElementById('level2-value');
-    const lastUpdatedEl = document.getElementById('last-updated');
-    const phStatusEl = document.getElementById('ph-status');
-
-    // Chart setup
-    const ctx = document.getElementById('phChart').getContext('2d');
-    const phData = { labels: [], datasets: [{ label: 'pH', data: [], tension:0.2, borderWidth:2, fill:false }] };
-    const phChart = new Chart(ctx, { type: 'line', data: phData, options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{min:0,max:14}}}});
-
-    // CSV download helper
-    document.getElementById('download-csv').addEventListener('click', ()=>{
-      const rows = [['timestamp','pH','TDS','flow','level1','level2']];
-      const len = phData.labels.length;
-      for(let i=0;i<len;i++){
-        rows.push([phData.labels[i], phData.datasets[0].data[i]||'', '', '', '', '']);
-      }
-      const csv = rows.map(r=>r.join(',')).join('\n');
-      const blob = new Blob([csv],{type:'text/csv'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download='gray_water_data.csv'; a.click(); URL.revokeObjectURL(url);
-    });
-
-    // GitHub links (update to your repo)
-    const githubURL = 'https://github.com/yourusername/gray-water-dashboard';
-    document.getElementById('github-link').href = githubURL;
-    document.getElementById('repoLink').href = githubURL;
-
-    // Listen for realtime changes
-    onValue(sensorsRef, (snapshot) => {
-      const val = snapshot.val() || {};
-      const now = new Date();
-      lastUpdatedEl.textContent = 'Last update: ' + now.toLocaleString();
-
-      // Update UI values if present
-      if (val.pH !== undefined) {
-        phEl.textContent = Number(val.pH).toFixed(2);
-        pushToChart(now.toLocaleTimeString(), Number(val.pH));
-        updatePHStatus(Number(val.pH));
-      }
-      if (val.TDS !== undefined) tdsEl.textContent = Math.round(val.TDS);
-      if (val.flow !== undefined) flowEl.textContent = Number(val.flow).toFixed(2);
-      if (val.level1 !== undefined) level1El.textContent = Number(val.level1).toFixed(1) + ' %';
-      if (val.level2 !== undefined) level2El.textContent = Number(val.level2).toFixed(1) + ' %';
-    });
-
-    function pushToChart(label, value){
-      phData.labels.push(label);
-      phData.datasets[0].data.push(value);
-      if(phData.labels.length>60){ phData.labels.shift(); phData.datasets[0].data.shift(); }
-      phChart.update();
-    }
-
-    function updatePHStatus(pH){
-      phStatusEl.innerHTML = '';
-      const dot = document.createElement('span'); dot.classList.add('status-dot');
-      let text = '';
-      if(pH>=6.5 && pH<=8.5){ dot.classList.add('status-ok'); text = 'Within range'; }
-      else if((pH>=6.0 && pH<6.5) || (pH>8.5 && pH<=9.0)){ dot.classList.add('status-warn'); text = 'Slight deviation'; }
-      else { dot.classList.add('status-off'); text = 'Out of range'; }
-      phStatusEl.appendChild(dot);
-      const span = document.createElement('span'); span.textContent = text; span.style.color='var(--muted)'; phStatusEl.appendChild(span);
-    }
-
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Example: Update with Firebase values later
+    document.getElementById("phValue").innerText = "7.1";
+    document.getElementById("tdsValue").innerText = "350";
+    document.getElementById("flowRate").innerText = "1.5";
+    document.getElementById("level1").innerText = "68";
+    document.getElementById("level2").innerText = "45";
   </script>
 </body>
 </html>
