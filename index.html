@@ -110,6 +110,30 @@
         </div>
       </div>
     </div>
+
+    <!-- History Section -->
+    <div class="row g-4 mt-4">
+      <div class="col-md-12">
+        <div class="card p-3">
+          <h5 class="card-title text-center">Historical Data (Last 20 Records)</h5>
+          <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+              <thead class="table-dark">
+                <tr>
+                  <th>Time</th>
+                  <th>pH</th>
+                  <th>TDS (ppm)</th>
+                  <th>Level 1 (%)</th>
+                  <th>Level 2 (%)</th>
+                  <th>Flow (L/min)</th>
+                </tr>
+              </thead>
+              <tbody id="historyTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Footer -->
@@ -118,86 +142,94 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script type="module">
-  // Import Firebase SDK
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-  // Your Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyD2zBIHwuVu8ecBUViZUpKYYlxQ6i7mfRA",
-    authDomain: "gray-water-database.firebaseapp.com",
-    databaseURL: "https://gray-water-database-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "gray-water-database",
-    storageBucket: "gray-water-database.appspot.com",
-    messagingSenderId: "858354713044",
-    appId: "1:858354713044:web:642a008b6d77012f115641"
-  };
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2zBIHwuVu8ecBUViZUpKYYlxQ6i7mfRA",
+      authDomain: "gray-water-database.firebaseapp.com",
+      databaseURL: "https://gray-water-database-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "gray-water-database",
+      storageBucket: "gray-water-database.appspot.com",
+      messagingSenderId: "858354713044",
+      appId: "1:858354713044:web:642a008b6d77012f115641"
+    };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-  // Chart references
-  const phChartRef = new Chart(document.getElementById("phChart"), {
-    type: "line",
-    data: { labels: [], datasets: [{ label: "pH", data: [], borderColor: "#0a9396", fill: false, tension: 0.3 }] }
-  });
+    // Chart setup
+    const phChartRef = new Chart(document.getElementById("phChart"), {
+      type: "line",
+      data: { labels: [], datasets: [{ label: "pH", data: [], borderColor: "#0a9396", fill: false, tension: 0.3 }] }
+    });
 
-  const tdsChartRef = new Chart(document.getElementById("tdsChart"), {
-    type: "bar",
-    data: { labels: [], datasets: [{ label: "TDS (ppm)", data: [], backgroundColor: "#005f73" }] }
-  });
+    const tdsChartRef = new Chart(document.getElementById("tdsChart"), {
+      type: "bar",
+      data: { labels: [], datasets: [{ label: "TDS (ppm)", data: [], backgroundColor: "#005f73" }] }
+    });
 
-  const flowChartRef = new Chart(document.getElementById("flowChart"), {
-    type: "line",
-    data: { labels: [], datasets: [{ label: "Flow (L/min)", data: [], borderColor: "#94d2bd", backgroundColor: "rgba(148,210,189,0.3)", fill: true, tension: 0.3 }] }
-  });
+    const flowChartRef = new Chart(document.getElementById("flowChart"), {
+      type: "line",
+      data: { labels: [], datasets: [{ label: "Flow (L/min)", data: [], borderColor: "#94d2bd", backgroundColor: "rgba(148,210,189,0.3)", fill: true, tension: 0.3 }] }
+    });
 
-  // Update UI + Charts when data changes
-  function updateCard(id, value) {
-    document.getElementById(id).innerText = value;
-  }
-
-  function addData(chart, value) {
-    const now = new Date().toLocaleTimeString();
-    chart.data.labels.push(now);
-    chart.data.datasets[0].data.push(value);
-
-    if (chart.data.labels.length > 10) { // keep only last 10 readings
-      chart.data.labels.shift();
-      chart.data.datasets[0].data.shift();
+    // Helpers
+    function updateCard(id, value) {
+      document.getElementById(id).innerText = value;
     }
-    chart.update();
-  }
 
-  // Realtime listeners
-  onValue(ref(db, "/sensors/pH"), (snap) => {
-    const val = snap.val();
-    updateCard("phValue", val);
-    addData(phChartRef, val);
-  });
+    function addData(chart, label, value) {
+      chart.data.labels.push(label);
+      chart.data.datasets[0].data.push(value);
+      if (chart.data.labels.length > 20) { // keep only last 20
+        chart.data.labels.shift();
+        chart.data.datasets[0].data.shift();
+      }
+      chart.update();
+    }
 
-  onValue(ref(db, "/sensors/TDS"), (snap) => {
-    const val = snap.val();
-    updateCard("tdsValue", val);
-    addData(tdsChartRef, val);
-  });
+    // Live listeners
+    onValue(ref(db, "/sensors/pH"), (snap) => updateCard("phValue", snap.val()));
+    onValue(ref(db, "/sensors/TDS"), (snap) => updateCard("tdsValue", snap.val()));
+    onValue(ref(db, "/sensors/flow"), (snap) => updateCard("flowRate", snap.val()));
+    onValue(ref(db, "/sensors/level1"), (snap) => updateCard("level1", snap.val()));
+    onValue(ref(db, "/sensors/level2"), (snap) => updateCard("level2", snap.val()));
 
-  onValue(ref(db, "/sensors/flow"), (snap) => {
-    const val = snap.val();
-    updateCard("flowRate", val);
-    addData(flowChartRef, val);
-  });
+    // Load last 20 history entries
+    const historyRef = query(ref(db, "/history"), limitToLast(20));
+    onValue(historyRef, (snapshot) => {
+      const historyData = snapshot.val();
+      const table = document.getElementById("historyTable");
+      table.innerHTML = "";
 
-  onValue(ref(db, "/sensors/level1"), (snap) => {
-    updateCard("level1", snap.val());
-  });
+      if (historyData) {
+        const keys = Object.keys(historyData).sort(); // ensure time order
+        keys.forEach((key) => {
+          const row = historyData[key];
+          const timeStr = new Date(parseInt(key)).toLocaleTimeString();
 
-  onValue(ref(db, "/sensors/level2"), (snap) => {
-    updateCard("level2", snap.val());
-  });
-</script>
+          // Update table
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${timeStr}</td>
+            <td>${row.pH?.toFixed(2)}</td>
+            <td>${row.TDS?.toFixed(1)}</td>
+            <td>${row.level1?.toFixed(1)}</td>
+            <td>${row.level2?.toFixed(1)}</td>
+            <td>${row.flow?.toFixed(2)}</td>
+          `;
+          table.appendChild(tr);
 
+          // Update charts
+          addData(phChartRef, timeStr, row.pH);
+          addData(tdsChartRef, timeStr, row.TDS);
+          addData(flowChartRef, timeStr, row.flow);
+        });
+      }
+    });
+  </script>
 </body>
 </html>
