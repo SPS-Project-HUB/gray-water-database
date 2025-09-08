@@ -7,52 +7,199 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { background-color: #f4f8fb; font-family: 'Segoe UI', sans-serif; }
-    .navbar { background: linear-gradient(90deg, #005f73, #0a9396); }
-    .navbar-brand { color: #fff !important; font-weight: bold; font-size: 1.4rem; }
-    .card { border-radius: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); transition: transform 0.2s; }
-    .card:hover { transform: translateY(-5px); }
-    .card-title { color: #0a9396; font-weight: 600; }
-    .footer { background: linear-gradient(90deg, #0a9396, #005f73); color: white; padding: 10px; text-align: center; margin-top: 20px; }
-    table { font-size: 0.9rem; }
+    body { 
+      background-color: #f4f8fb; 
+      font-family: 'Segoe UI', sans-serif; 
+      padding-bottom: 60px;
+    }
+    .navbar { 
+      background: linear-gradient(90deg, #005f73, #0a9396); 
+    }
+    .navbar-brand { 
+      color: #fff !important; 
+      font-weight: bold; 
+      font-size: 1.4rem; 
+    }
+    .card { 
+      border-radius: 15px; 
+      box-shadow: 0 6px 15px rgba(0,0,0,0.1); 
+      transition: transform 0.2s; 
+      margin-bottom: 20px;
+    }
+    .card:hover { 
+      transform: translateY(-5px); 
+    }
+    .card-title { 
+      color: #0a9396; 
+      font-weight: 600; 
+    }
+    .footer { 
+      background: linear-gradient(90deg, #0a9396, #005f73); 
+      color: white; 
+      padding: 10px; 
+      text-align: center; 
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+    }
+    table { 
+      font-size: 0.9rem; 
+    }
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+    .status-normal {
+      background-color: #28a745;
+    }
+    .status-warning {
+      background-color: #ffc107;
+    }
+    .status-danger {
+      background-color: #dc3545;
+    }
+    .gauge-container {
+      position: relative;
+      width: 100%;
+      text-align: center;
+    }
+    .gauge-value {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#">Gray Water Dashboard</a>
+      <a class="navbar-brand" href="#">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMiAxMmNlNSA1IDUgMTAgMTAgMTBhMTAgMTAgMCAwIDAgMTAtMTAgMTAgMTAgMCAwIDAtMTAtMTBDNyAyIDIgNyAyIDEyeiI+PC9wYXRoPjxwYXRoIGQ9Ik0yIDEySDIyTTEyIDJ2MjBNMTguNjIgMTguNjJhMTYgMTYgMCAwIDEtNS41Ni01LjU2Ij48L3BhdGg+PC9zdmc+" width="30" height="30" class="d-inline-block align-top" alt="Water Icon">
+        Gray Water Dashboard
+      </a>
+      <div class="navbar-text ms-auto">
+        Last Update: <span id="lastUpdateTime">--</span>
+      </div>
     </div>
   </nav>
 
   <!-- Content -->
   <div class="container mt-4">
-    <div class="row g-4">
-      <div class="col-md-4"><div class="card text-center p-3"><h5 class="card-title">pH Value</h5><h2 id="phValue">--</h2></div></div>
-      <div class="col-md-4"><div class="card text-center p-3"><h5 class="card-title">TDS (ppm)</h5><h2 id="tdsValue">--</h2></div></div>
-      <div class="col-md-4"><div class="card text-center p-3"><h5 class="card-title">Flow Rate (L/min)</h5><h2 id="flowValue">--</h2></div></div>
+    <!-- System Status -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card p-3">
+          <h5 class="card-title">System Status</h5>
+          <div class="row">
+            <div class="col-md-4">
+              <span class="status-indicator" id="phStatus"></span>
+              pH: <span id="phStatusText">--</span>
+            </div>
+            <div class="col-md-4">
+              <span class="status-indicator" id="tdsStatus"></span>
+              TDS: <span id="tdsStatusText">--</span>
+            </div>
+            <div class="col-md-4">
+              <span class="status-indicator" id="flowStatus"></span>
+              Flow: <span id="flowStatusText">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- Real-time Values -->
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card text-center p-3">
+          <h5 class="card-title">pH Value</h5>
+          <div class="gauge-container">
+            <canvas id="phGauge" width="150" height="150"></canvas>
+            <div class="gauge-value" id="phValue">--</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-center p-3">
+          <h5 class="card-title">TDS (ppm)</h5>
+          <div class="gauge-container">
+            <canvas id="tdsGauge" width="150" height="150"></canvas>
+            <div class="gauge-value" id="tdsValue">--</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-center p-3">
+          <h5 class="card-title">Flow Rate (L/min)</h5>
+          <div class="gauge-container">
+            <canvas id="flowGauge" width="150" height="150"></canvas>
+            <div class="gauge-value" id="flowValue">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Water Levels -->
     <div class="row g-4 mt-2">
-      <div class="col-md-6"><div class="card text-center p-3"><h5 class="card-title">Water Level 1 (%)</h5><h2 id="level1Value">--</h2></div></div>
-      <div class="col-md-6"><div class="card text-center p-3"><h5 class="card-title">Water Level 2 (%)</h5><h2 id="level2Value">--</h2></div></div>
+      <div class="col-md-6">
+        <div class="card text-center p-3">
+          <h5 class="card-title">Water Level 1 (%)</h5>
+          <div class="progress" style="height: 30px;">
+            <div id="level1Progress" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+              <span id="level1Value">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card text-center p-3">
+          <h5 class="card-title">Water Level 2 (%)</h5>
+          <div class="progress" style="height: 30px;">
+            <div id="level2Progress" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+              <span id="level2Value">--</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Charts Section -->
     <div class="row g-4 mt-4">
-      <div class="col-md-6"><div class="card p-3"><h5 class="card-title text-center">pH Trend</h5><canvas id="phChart"></canvas></div></div>
-      <div class="col-md-6"><div class="card p-3"><h5 class="card-title text-center">TDS Trend</h5><canvas id="tdsChart"></canvas></div></div>
+      <div class="col-md-6">
+        <div class="card p-3">
+          <h5 class="card-title text-center">pH Trend</h5>
+          <canvas id="phChart"></canvas>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card p-3">
+          <h5 class="card-title text-center">TDS Trend</h5>
+          <canvas id="tdsChart"></canvas>
+        </div>
+      </div>
     </div>
 
     <div class="row g-4 mt-4">
-      <div class="col-md-12"><div class="card p-3"><h5 class="card-title text-center">Flow Rate Trend</h5><canvas id="flowChart"></canvas></div></div>
+      <div class="col-md-12">
+        <div class="card p-3">
+          <h5 class="card-title text-center">Flow Rate Trend</h5>
+          <canvas id="flowChart"></canvas>
+        </div>
+      </div>
     </div>
 
     <!-- Table Section -->
     <div class="row g-4 mt-4">
       <div class="col-md-12">
         <div class="card p-3">
-          <h5 class="card-title text-center">Old Readings</h5>
+          <h5 class="card-title text-center">Historical Readings</h5>
           <div class="table-responsive">
             <table class="table table-striped">
               <thead class="table-dark">
@@ -81,7 +228,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getDatabase, ref, onValue, orderByKey, limitToLast, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD2zBIHwuVu8ecBUViZUpKYYlxQ6i7mfRA",
@@ -99,24 +246,145 @@
     // Chart setup
     const phChartRef = new Chart(document.getElementById("phChart"), {
       type: "line",
-      data: { labels: [], datasets: [{ label: "pH", data: [], borderColor: "#0a9396", fill: false, tension: 0.3 }] }
+      data: { 
+        labels: [], 
+        datasets: [{ 
+          label: "pH", 
+          data: [], 
+          borderColor: "#0a9396", 
+          backgroundColor: "rgba(10, 147, 150, 0.1)",
+          fill: true, 
+          tension: 0.3 
+        }] 
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          }
+        }
+      }
     });
+    
     const tdsChartRef = new Chart(document.getElementById("tdsChart"), {
       type: "line",
-      data: { labels: [], datasets: [{ label: "TDS (ppm)", data: [], borderColor: "#005f73", fill: false, tension: 0.3 }] }
+      data: { 
+        labels: [], 
+        datasets: [{ 
+          label: "TDS (ppm)", 
+          data: [], 
+          borderColor: "#005f73", 
+          backgroundColor: "rgba(0, 95, 115, 0.1)",
+          fill: true, 
+          tension: 0.3 
+        }] 
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          }
+        }
+      }
     });
+    
     const flowChartRef = new Chart(document.getElementById("flowChart"), {
       type: "line",
-      data: { labels: [], datasets: [{ label: "Flow (L/min)", data: [], borderColor: "#94d2bd", backgroundColor: "rgba(148,210,189,0.3)", fill: true, tension: 0.3 }] }
+      data: { 
+        labels: [], 
+        datasets: [{ 
+          label: "Flow (L/min)", 
+          data: [], 
+          borderColor: "#94d2bd", 
+          backgroundColor: "rgba(148,210,189,0.3)", 
+          fill: true, 
+          tension: 0.3 
+        }] 
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          }
+        }
+      }
     });
 
-    function updateCard(id, value) { document.getElementById(id).innerText = value; }
+    // Gauge charts
+    const createGauge = (canvasId, value, max, color) => {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      const centerX = ctx.canvas.width / 2;
+      const centerY = ctx.canvas.height / 2;
+      const radius = Math.min(centerX, centerY) - 10;
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      
+      // Draw background circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.strokeStyle = '#e0e0e0';
+      ctx.lineWidth = 10;
+      ctx.stroke();
+      
+      // Draw value arc
+      const startAngle = 1.1 * Math.PI;
+      const endAngle = 1.9 * Math.PI;
+      const valueAngle = startAngle + (value / max) * (endAngle - startAngle);
+      
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, startAngle, valueAngle);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 10;
+      ctx.stroke();
+    };
 
-    function addData(chart, value) {
-      const now = new Date().toLocaleTimeString();
-      chart.data.labels.push(now);
+    // Update status indicators
+    const updateStatus = (value, type) => {
+      const indicator = document.getElementById(`${type}Status`);
+      const text = document.getElementById(`${type}StatusText`);
+      
+      if (type === 'ph') {
+        if (value >= 6.5 && value <= 8.5) {
+          indicator.className = 'status-indicator status-normal';
+          text.textContent = 'Normal';
+        } else {
+          indicator.className = 'status-indicator status-danger';
+          text.textContent = 'Out of Range';
+        }
+      } else if (type === 'tds') {
+        if (value <= 500) {
+          indicator.className = 'status-indicator status-normal';
+          text.textContent = 'Normal';
+        } else {
+          indicator.className = 'status-indicator status-warning';
+          text.textContent = 'High';
+        }
+      } else if (type === 'flow') {
+        if (value > 0) {
+          indicator.className = 'status-indicator status-normal';
+          text.textContent = 'Flow Detected';
+        } else {
+          indicator.className = 'status-indicator status-warning';
+          text.textContent = 'No Flow';
+        }
+      }
+    };
+
+    function updateCard(id, value, type = null) { 
+      document.getElementById(id).innerText = value; 
+      if (type) {
+        updateStatus(value, type);
+      }
+    }
+
+    function addData(chart, value, label) {
+      chart.data.labels.push(label);
       chart.data.datasets[0].data.push(value);
-      if (chart.data.labels.length > 10) {
+      if (chart.data.labels.length > 20) {
         chart.data.labels.shift();
         chart.data.datasets[0].data.shift();
       }
@@ -125,37 +393,109 @@
 
     function addRow(time, pH, TDS, flow, l1, l2) {
       const table = document.getElementById("dataTable");
-      const row = `<tr><td>${time}</td><td>${pH}</td><td>${TDS}</td><td>${flow}</td><td>${l1}</td><td>${l2}</td></tr>`;
-      table.innerHTML = row + table.innerHTML; // new rows on top
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${time}</td>
+        <td>${pH}</td>
+        <td>${TDS}</td>
+        <td>${flow}</td>
+        <td>${l1}</td>
+        <td>${l2}</td>
+      `;
+      table.prepend(row);
+      
+      // Keep only the last 10 rows
+      if (table.children.length > 10) {
+        table.removeChild(table.lastChild);
+      }
     }
 
-    // Realtime listener for history
-    onValue(ref(db, "/history"), (snap) => {
+    // Update gauge charts
+    function updateGauges(pH, TDS, flow) {
+      createGauge('phGauge', pH, 14, '#0a9396');
+      createGauge('tdsGauge', Math.min(TDS, 1000), 1000, '#005f73');
+      createGauge('flowGauge', Math.min(flow, 10), 10, '#94d2bd');
+    }
+
+    // Update progress bars for water levels
+    function updateLevels(level1, level2) {
+      const level1Progress = document.getElementById('level1Progress');
+      const level2Progress = document.getElementById('level2Progress');
+      
+      level1Progress.style.width = `${level1}%`;
+      level1Progress.setAttribute('aria-valuenow', level1);
+      
+      level2Progress.style.width = `${level2}%`;
+      level2Progress.setAttribute('aria-valuenow', level2);
+      
+      // Change color based on level
+      level1Progress.className = `progress-bar ${level1 < 20 ? 'bg-danger' : level1 < 50 ? 'bg-warning' : 'bg-success'}`;
+      level2Progress.className = `progress-bar ${level2 < 20 ? 'bg-danger' : level2 < 50 ? 'bg-warning' : 'bg-success'}`;
+    }
+
+    // Realtime listener for latest data
+    onValue(ref(db, "/latest"), (snap) => {
       const data = snap.val();
       if (!data) return;
-      const keys = Object.keys(data);
-      const lastKey = keys[keys.length - 1];
-      const latest = data[lastKey];
+      
+      const pH = parseFloat(data.pH) || 0;
+      const TDS = parseFloat(data.TDS) || 0;
+      const flow = parseFloat(data.flow) || 0;
+      const l1 = parseFloat(data.level1) || 0;
+      const l2 = parseFloat(data.level2) || 0;
+      const timestamp = data.timestamp || new Date().toLocaleString();
 
-      const timestamp = new Date().toLocaleString();
-      const pH = parseFloat(latest.pH) || 0;
-      const TDS = parseFloat(latest.TDS) || 0;
-      const flow = parseFloat(latest.flow) || 0;
-      const l1 = parseFloat(latest.level1) || 0;
-      const l2 = parseFloat(latest.level2) || 0;
-
-      updateCard("phValue", pH.toFixed(2));
-      updateCard("tdsValue", TDS.toFixed(1));
-      updateCard("flowValue", flow.toFixed(2));
-      updateCard("level1Value", l1.toFixed(1));
-      updateCard("level2Value", l2.toFixed(1));
-
-      addData(phChartRef, pH);
-      addData(tdsChartRef, TDS);
-      addData(flowChartRef, flow);
-
+      updateCard("phValue", pH.toFixed(2), 'ph');
+      updateCard("tdsValue", TDS.toFixed(1), 'tds');
+      updateCard("flowValue", flow.toFixed(2), 'flow');
+      updateCard("level1Value", l1.toFixed(1) + '%');
+      updateCard("level2Value", l2.toFixed(1) + '%');
+      
+      updateGauges(pH, TDS, flow);
+      updateLevels(l1, l2);
+      
+      document.getElementById("lastUpdateTime").textContent = timestamp;
+      
+      // Add to charts
+      const timeLabel = new Date().toLocaleTimeString();
+      addData(phChartRef, pH, timeLabel);
+      addData(tdsChartRef, TDS, timeLabel);
+      addData(flowChartRef, flow, timeLabel);
+      
+      // Add to table
       addRow(timestamp, pH.toFixed(2), TDS.toFixed(1), flow.toFixed(2), l1.toFixed(1), l2.toFixed(1));
     });
+
+    // Load historical data
+    const historyQuery = query(ref(db, "/history"), orderByKey(), limitToLast(20));
+    onValue(historyQuery, (snap) => {
+      const data = snap.val();
+      if (!data) return;
+      
+      // Clear existing charts
+      phChartRef.data.labels = [];
+      phChartRef.data.datasets[0].data = [];
+      tdsChartRef.data.labels = [];
+      tdsChartRef.data.datasets[0].data = [];
+      flowChartRef.data.labels = [];
+      flowChartRef.data.datasets[0].data = [];
+      
+      // Add historical data to charts
+      Object.values(data).forEach((reading, index) => {
+        const timeLabel = reading.timestamp ? reading.timestamp.split(' ')[1] : `Point ${index}`;
+        addData(phChartRef, parseFloat(reading.pH) || 0, timeLabel);
+        addData(tdsChartRef, parseFloat(reading.TDS) || 0, timeLabel);
+        addData(flowChartRef, parseFloat(reading.flow) || 0, timeLabel);
+      });
+      
+      // Update charts
+      phChartRef.update();
+      tdsChartRef.update();
+      flowChartRef.update();
+    });
+
+    // Initial gauge rendering
+    updateGauges(0, 0, 0);
   </script>
 </body>
 </html>
