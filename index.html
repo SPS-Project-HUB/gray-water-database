@@ -1,205 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gray Water Monitoring Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Water Quality Monitoring Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2zBIHwuVu8ecBUViZUpKYYlxQ6i7mfRA",
+      authDomain: "gray-water-database.firebaseapp.com",
+      databaseURL: "https://gray-water-database-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "gray-water-database",
+      storageBucket: "gray-water-database.firebasestorage.app",
+      messagingSenderId: "858354713044",
+      appId: "1:858354713044:web:642a008b6d77012f115641"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    function updateCard(id, value) {
+      document.getElementById(id).innerText = value;
+    }
+
+    function createChart(ctx, label, color) {
+      return new Chart(ctx, {
+        type: "line",
+        data: { labels: [], datasets: [{ label, data: [], borderColor: color, tension: 0.3 }] },
+        options: { responsive: true, scales: { x: { ticks: { display: false } } } }
+      });
+    }
+
+    function addData(chart, value) {
+      chart.data.labels.push("");
+      chart.data.datasets[0].data.push(value);
+      if (chart.data.labels.length > 20) {
+        chart.data.labels.shift();
+        chart.data.datasets[0].data.shift();
+      }
+      chart.update();
+    }
+
+    // CSV Export
+    function downloadCSV(rows) {
+      let csvContent = "data:text/csv;charset=utf-8," 
+        + rows.map(e => e.join(",")).join("\n");
+      const link = document.createElement("a");
+      link.setAttribute("href", encodeURI(csvContent));
+      link.setAttribute("download", "water_data.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    window.onload = () => {
+      const phChartRef = createChart(document.getElementById("phChart"), "pH", "green");
+      const tdsChartRef = createChart(document.getElementById("tdsChart"), "TDS", "blue");
+      const flowChartRef = createChart(document.getElementById("flowChart"), "Flow", "orange");
+
+      const tableBody = document.getElementById("dataTableBody");
+      const allData = [["Timestamp","pH","TDS","Flow","Level1","Level2"]]; // header for CSV
+
+      function addRow(timestamp, pH, TDS, flow, level1, level2) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${timestamp}</td><td>${pH}</td><td>${TDS}</td><td>${flow}</td><td>${level1}</td><td>${level2}</td>`;
+        tableBody.prepend(row); // newest first
+        allData.push([timestamp, pH, TDS, flow, level1, level2]);
+      }
+
+      onValue(ref(db, "/sensors"), (snap) => {
+        const data = snap.val();
+        if (!data) return;
+
+        const timestamp = new Date().toLocaleString();
+        const pH = parseFloat(data.pH) || 0;
+        const TDS = parseFloat(data.TDS) || 0;
+        const flow = parseFloat(data.flow) || 0;
+        const l1 = parseFloat(data.level1) || 0;
+        const l2 = parseFloat(data.level2) || 0;
+
+        // update cards
+        updateCard("phValue", pH.toFixed(2));
+        updateCard("tdsValue", TDS.toFixed(1) + " ppm");
+        updateCard("flowValue", flow.toFixed(2) + " L/min");
+        updateCard("level1Value", l1.toFixed(1) + " %");
+        updateCard("level2Value", l2.toFixed(1) + " %");
+
+        // update charts
+        addData(phChartRef, pH);
+        addData(tdsChartRef, TDS);
+        addData(flowChartRef, flow);
+
+        // update table
+        addRow(timestamp, pH.toFixed(2), TDS.toFixed(1), flow.toFixed(2), l1.toFixed(1), l2.toFixed(1));
+      });
+
+      // CSV button
+      document.getElementById("downloadBtn").addEventListener("click", () => {
+        downloadCSV(allData);
+      });
+    };
+  </script>
   <style>
-    body {
-      background-color: #f4f8fb;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .navbar {
-      background: linear-gradient(90deg, #005f73, #0a9396);
-    }
-    .navbar-brand {
-      color: #fff !important;
-      font-weight: bold;
-      font-size: 1.4rem;
-    }
-    .card {
-      border-radius: 15px;
-      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
-      transition: transform 0.2s;
-    }
-    .card:hover {
-      transform: translateY(-5px);
-    }
-    .card-title {
-      color: #0a9396;
-      font-weight: 600;
-    }
-    .footer {
-      background: linear-gradient(90deg, #0a9396, #005f73);
-      color: white;
-      padding: 10px;
-      text-align: center;
-      margin-top: 20px;
-    }
+    body { font-family: "Segoe UI", sans-serif; margin:0; padding:0; background:#f4f7fb; }
+    header { background:#0077b6; padding:15px; text-align:center; color:white; font-size:1.5rem; }
+    .container { padding:20px; }
+    .cards { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:15px; margin-bottom:25px; }
+    .card { background:white; border-radius:12px; padding:20px; text-align:center; box-shadow:0 4px 8px rgba(0,0,0,0.08); }
+    .card h3 { margin:0; font-size:1.1rem; color:#555; }
+    .card p { font-size:1.6rem; margin-top:8px; font-weight:bold; color:#0077b6; }
+    .charts { display:grid; grid-template-columns: 1fr; gap:25px; margin-bottom:30px; }
+    canvas { background:white; border-radius:12px; padding:15px; }
+    table { width:100%; border-collapse:collapse; background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 8px rgba(0,0,0,0.08); }
+    th, td { border:1px solid #ddd; padding:8px; text-align:center; }
+    th { background:#0077b6; color:white; }
+    tr:nth-child(even) { background:#f2f2f2; }
+    button { margin:15px 0; padding:10px 20px; background:#0077b6; color:white; border:none; border-radius:8px; cursor:pointer; }
+    button:hover { background:#005f87; }
+    footer { margin-top:30px; text-align:center; padding:10px; background:#0077b6; color:white; }
   </style>
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#">Gray Water Dashboard</a>
-    </div>
-  </nav>
-
-  <!-- Content -->
-  <div class="container mt-4">
-    <div class="row g-4">
-      <div class="col-md-4">
-        <div class="card text-center p-3">
-          <h5 class="card-title">pH Value</h5>
-          <h2 id="phValue">--</h2>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card text-center p-3">
-          <h5 class="card-title">TDS (ppm)</h5>
-          <h2 id="tdsValue">--</h2>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card text-center p-3">
-          <h5 class="card-title">Flow Rate (L/min)</h5>
-          <h2 id="flowValue">--</h2>
-        </div>
-      </div>
+  <header>💧 Water Quality Monitoring Dashboard</header>
+  <div class="container">
+    <div class="cards">
+      <div class="card"><h3>pH</h3><p id="phValue">--</p></div>
+      <div class="card"><h3>TDS</h3><p id="tdsValue">--</p></div>
+      <div class="card"><h3>Flow</h3><p id="flowValue">--</p></div>
+      <div class="card"><h3>Level 1</h3><p id="level1Value">--</p></div>
+      <div class="card"><h3>Level 2</h3><p id="level2Value">--</p></div>
     </div>
 
-    <div class="row g-4 mt-2">
-      <div class="col-md-6">
-        <div class="card text-center p-3">
-          <h5 class="card-title">Water Level 1 (%)</h5>
-          <h2 id="level1Value">--</h2>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card text-center p-3">
-          <h5 class="card-title">Water Level 2 (%)</h5>
-          <h2 id="level2Value">--</h2>
-        </div>
-      </div>
+    <div class="charts">
+      <canvas id="phChart" height="100"></canvas>
+      <canvas id="tdsChart" height="100"></canvas>
+      <canvas id="flowChart" height="100"></canvas>
     </div>
 
-    <!-- Charts Section -->
-    <div class="row g-4 mt-4">
-      <div class="col-md-6">
-        <div class="card p-3">
-          <h5 class="card-title text-center">pH Trend</h5>
-          <canvas id="phChart"></canvas>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card p-3">
-          <h5 class="card-title text-center">TDS Trend</h5>
-          <canvas id="tdsChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <div class="row g-4 mt-4">
-      <div class="col-md-12">
-        <div class="card p-3">
-          <h5 class="card-title text-center">Flow Rate Trend</h5>
-          <canvas id="flowChart"></canvas>
-        </div>
-      </div>
-    </div>
+    <h2>📊 Historical Data</h2>
+    <button id="downloadBtn">⬇ Download CSV</button>
+    <table>
+      <thead>
+        <tr><th>Timestamp</th><th>pH</th><th>TDS</th><th>Flow</th><th>Level1</th><th>Level2</th></tr>
+      </thead>
+      <tbody id="dataTableBody"></tbody>
+    </table>
   </div>
-
-  <!-- Footer -->
-  <div class="footer">
-    <p>Gray Water Monitoring System | <a href="https://github.com/" target="_blank" class="text-white">GitHub Repo</a></p>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script type="module">
-  // Import Firebase SDK
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-  // Your Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyD2zBIHwuVu8ecBUViZUpKYYlxQ6i7mfRA",
-    authDomain: "gray-water-database.firebaseapp.com",
-    databaseURL: "https://gray-water-database-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "gray-water-database",
-    storageBucket: "gray-water-database.appspot.com",
-    messagingSenderId: "858354713044",
-    appId: "1:858354713044:web:642a008b6d77012f115641"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  // Chart references
-  const phChartRef = new Chart(document.getElementById("phChart"), {
-    type: "line",
-    data: { labels: [], datasets: [{ label: "pH", data: [], borderColor: "#0a9396", fill: false, tension: 0.3 }] }
-  });
-
-  const tdsChartRef = new Chart(document.getElementById("tdsChart"), {
-    type: "bar",
-    data: { labels: [], datasets: [{ label: "TDS (ppm)", data: [], backgroundColor: "#005f73" }] }
-  });
-
-  const flowChartRef = new Chart(document.getElementById("flowChart"), {
-    type: "line",
-    data: { labels: [], datasets: [{ label: "Flow (L/min)", data: [], borderColor: "#94d2bd", backgroundColor: "rgba(148,210,189,0.3)", fill: true, tension: 0.3 }] }
-  });
-
-  // Update UI + Charts when data changes
-  function updateCard(id, value) {
-    document.getElementById(id).innerText = value;
-  }
-
-  function addData(chart, value) {
-    const now = new Date().toLocaleTimeString();
-    chart.data.labels.push(now);
-    chart.data.datasets[0].data.push(value);
-
-    if (chart.data.labels.length > 10) { // keep only last 10 readings
-      chart.data.labels.shift();
-      chart.data.datasets[0].data.shift();
-    }
-    chart.update();
-  }
-
-  // Realtime listeners
-  onValue(ref(db, "/sensors/pH"), (snap) => {
-    const val = snap.val();
-    updateCard("phValue", val ? val.toFixed(2) : "--");
-    addData(phChartRef, val);
-  });
-
-  onValue(ref(db, "/sensors/TDS"), (snap) => {
-    const val = snap.val();
-    updateCard("tdsValue", val ? val.toFixed(1) + " ppm" : "--");
-    addData(tdsChartRef, val);
-  });
-
-  onValue(ref(db, "/sensors/flow"), (snap) => {
-    const val = snap.val();
-    updateCard("flowValue", val ? val.toFixed(2) + " L/min" : "--");
-    addData(flowChartRef, val);
-  });
-
-  onValue(ref(db, "/sensors/level1"), (snap) => {
-    const val = snap.val();
-    updateCard("level1Value", val ? val.toFixed(1) + " %" : "--");
-  });
-
-  onValue(ref(db, "/sensors/level2"), (snap) => {
-    const val = snap.val();
-    updateCard("level2Value", val ? val.toFixed(1) + " %" : "--");
-  });
-</script>
-
+  <footer>© 2025 Water Monitoring System</footer>
 </body>
 </html>
